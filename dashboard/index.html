@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrypT Trading Intelligence</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<!-- ===== HEADER ===== -->
+<header id="header">
+  <div class="header-left">
+    <span class="logo">CrypT</span>
+    <span class="badge live">LIVE</span>
+    <span class="badge fg" id="fg-badge">F&amp;G: --</span>
+  </div>
+  <div class="header-right">
+    <span id="status-bar">Loading...</span>
+    <span id="clock">--:--</span>
+  </div>
+</header>
+
+<!-- ===== MARKET OVERVIEW ===== -->
+<section id="market-section">
+  <div class="section-header">
+    <h2>CRYPTO</h2>
+    <span class="subtitle" id="crypto-count">0 assets</span>
+  </div>
+  <div id="crypto-grid" class="market-grid"></div>
+
+  <div class="section-header" style="margin-top:12px">
+    <h2>FOREX</h2>
+    <span class="subtitle" id="forex-count">0 pairs</span>
+  </div>
+  <div id="forex-grid" class="market-grid"></div>
+</section>
+
+<!-- ===== DETAIL PANEL (click coin to show) ===== -->
+<section id="detail-panel" class="hidden">
+  <div class="detail-header">
+    <div>
+      <span class="detail-symbol" id="detail-symbol">BTCUSDT</span>
+      <span class="detail-price" id="detail-price"></span>
+      <span class="detail-change" id="detail-change">0%</span>
+    </div>
+    <button id="detail-close" onclick="closeDetail()">&times;</button>
+  </div>
+  <div class="detail-body">
+    <div class="detail-chart-wrap">
+      <canvas id="detail-chart"></canvas>
+    </div>
+    <div class="detail-stats">
+      <div class="stat-group">
+        <h3>Derivatives</h3>
+        <div class="stat-row"><span>Funding Rate</span><span id="d-funding">--</span></div>
+        <div class="stat-row"><span>Open Interest</span><span id="d-oi">--</span></div>
+        <div class="stat-row"><span>OI Change 1h</span><span id="d-oi-chg">--</span></div>
+        <div class="stat-row"><span>Long / Short</span><span id="d-ls">--</span></div>
+      </div>
+      <div class="stat-group">
+        <h3>Cross-Exchange</h3>
+        <div class="stat-row"><span>Binance FR</span><span id="d-binance-fr">--</span></div>
+        <div class="stat-row"><span>Bybit FR</span><span id="d-bybit-fr">--</span></div>
+        <div class="stat-row"><span>Spread</span><span id="d-spread">--</span></div>
+      </div>
+      <div class="stat-group">
+        <h3>Charts</h3>
+        <div class="mini-chart-tabs">
+          <button class="tab-btn active" onclick="switchMiniChart('funding')">Funding</button>
+          <button class="tab-btn" onclick="switchMiniChart('oi')">OI</button>
+        </div>
+        <canvas id="mini-chart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== INFO TABS ===== -->
+<section id="info-section">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('news')">Tin tuc</button>
+    <button class="tab-btn" onclick="switchTab('whale')">Whale</button>
+    <button class="tab-btn" onclick="switchTab('calendar')">Calendar</button>
+    <button class="tab-btn" onclick="switchTab('signals')">ML Signals</button>
+    <button class="tab-btn" onclick="switchTab('dbstats')">DB Stats</button>
+  </div>
+  <div id="tab-news" class="tab-content active"><div class="empty-state">Loading...</div></div>
+  <div id="tab-whale" class="tab-content"><div class="empty-state">Loading...</div></div>
+  <div id="tab-calendar" class="tab-content"><div class="empty-state">Loading...</div></div>
+  <div id="tab-signals" class="tab-content"><div class="empty-state">Loading...</div></div>
+  <div id="tab-dbstats" class="tab-content"><div class="empty-state">Loading...</div></div>
+</section>
+
+<footer>
+  <span>Trading Intelligence System &mdash; Data for reference only</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

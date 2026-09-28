@@ -1,0 +1,39 @@
+# Env
+.env
+
+# Database (SQLite legacy - now using PostgreSQL)
+data/market.db
+data/market.db-wal
+data/market.db-shm
+
+# ML Models
+data/models/*.pkl
+data/models/*.json
+
+# Legacy
+price_history.json
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
