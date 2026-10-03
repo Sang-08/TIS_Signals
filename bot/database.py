@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 """
 database.py — PostgreSQL database layer cho Trading Intelligence System.
 
@@ -44,7 +46,7 @@ class CryptDB:
         from urllib.parse import urlparse, unquote
         p = urlparse(self.database_url)
         kw = {}
-        if p.hostname: kw["host"] = p.hostname
+        if p.hostname: kw["host"] = "127.0.0.1" if p.hostname.lower() in ("localhost", "::1") else p.hostname
         if p.port: kw["port"] = p.port
         if p.username: kw["user"] = unquote(p.username)
         if p.password: kw["password"] = unquote(p.password)

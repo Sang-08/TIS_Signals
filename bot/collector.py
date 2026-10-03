@@ -29,7 +29,12 @@ logger = logging.getLogger(__name__)
 FEAR_GREED_URL = "https://api.alternative.me/fng/?limit=1"
 
 
+_FG_CACHE = {'value': None, 'ts': 0}
+
 def fetch_fear_greed() -> int | None:
+    now = time.time()
+    if _FG_CACHE['value'] is not None and (now - _FG_CACHE['ts']) < 300:
+        return _FG_CACHE['value']
     """
     Lấy Fear & Greed Index từ alternative.me (crypto).
     Trả về int 0-100 hoặc None nếu lỗi.
@@ -40,6 +45,8 @@ def fetch_fear_greed() -> int | None:
         resp.raise_for_status()
         data = resp.json()
         value = int(data["data"][0]["value"])
+        _FG_CACHE["value"] = value
+        _FG_CACHE["ts"] = now
         return value
     except Exception as e:
         logger.warning(f"Error fetching Fear & Greed: {e}")

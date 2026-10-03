@@ -7,6 +7,7 @@ HOẶC: python -m api.api_server
 
 import os
 import sys
+import time
 import uvicorn
 from datetime import datetime, timezone
 from dotenv import load_dotenv
@@ -47,6 +48,14 @@ DASHBOARD_DIR = os.path.join(PROJECT_ROOT, "dashboard")
 if os.path.isdir(DASHBOARD_DIR):
     app.mount("/dashboard", StaticFiles(directory=DASHBOARD_DIR, html=True), name="dashboard")
 
+# Known crypto symbols (USDT suffix)
+CRYPTO_SUFFIXES = ("USDT", "BUSD", "USDC")
+
+
+def _is_crypto(asset: str) -> bool:
+    """Detect if asset is crypto (ends with USDT etc) vs forex."""
+    return any(asset.upper().endswith(s) for s in CRYPTO_SUFFIXES)
+
 
 @app.get("/")
 async def root():
@@ -55,18 +64,67 @@ async def root():
 
 @app.get("/api/summary")
 async def api_summary():
+    """Main summary endpoint — provides ALL data needed for dashboard home."""
     snapshots = db.get_latest_snapshots()
     fg = fetch_fear_greed()
     h_event = hours_to_next_high_event()
     upcoming = get_upcoming_high_impact(hours=24)
 
+    # Separate crypto vs forex
+    crypto_list = []
+    forex_dict = {}
+
+    for asset, snap in snapshots.items():
+        if _is_crypto(asset):
+            # Build crypto card data
+            change_1h = db.get_price_change(asset, 3600)
+            change_24h = db.get_price_change(asset, 86400)
+            crypto_list.append({
+                "symbol": asset,
+                "price": snap.get("price"),
+                "change_1h": change_1h,
+                "change_24h": change_24h,
+                "funding_rate": snap.get("funding_rate"),
+                "oi_value": snap.get("oi_value"),
+                "oi_change_1h": snap.get("oi_change_1h"),
+                "long_ratio": snap.get("long_ratio"),
+                "short_ratio": snap.get("short_ratio"),
+                "timestamp": snap.get("timestamp"),
+            })
+        else:
+            # Forex pair
+            pair_name = asset.replace("OANDA:", "")
+            change_1h = db.get_price_change(asset, 3600)
+            change_24h = db.get_price_change(asset, 86400)
+            forex_dict[pair_name] = {
+                "price": snap.get("price"),
+                "change_1h": change_1h,
+                "change_24h": change_24h,
+                "timestamp": snap.get("timestamp"),
+            }
+
+    # Sort crypto by priority: BTC, ETH, SOL first, then by price descending
+    PRIORITY_ORDER = {"BTCUSDT": 0, "ETHUSDT": 1, "SOLUSDT": 2, "BNBUSDT": 3}
+    crypto_list.sort(key=lambda c: (
+        PRIORITY_ORDER.get(c["symbol"], 99),
+        -(c.get("price") or 0),
+    ))
+
+    # Determine last_update
+    all_ts = [s.get("timestamp", 0) for s in snapshots.values()]
+    last_update = max(all_ts) if all_ts else None
+
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "snapshots": snapshots,
+        "crypto": crypto_list,
+        "forex": forex_dict,
         "fear_greed": fg,
         "fear_greed_label": fear_greed_label(fg),
         "hours_to_next_event": h_event,
         "upcoming_events": upcoming[:3] if upcoming else [],
+        "tracked_assets": len(snapshots),
+        "last_update": last_update,
+        "snapshots": snapshots,  # Keep raw for backward compat
     }
 
 
@@ -78,6 +136,7 @@ async def api_candles(
     history = db.get_price_history(asset, hours=hours)
     return {
         "asset": asset, "hours": hours, "count": len(history),
+        "candles": [{"timestamp": ts, "price": price} for ts, price in history],
         "data": [{"timestamp": ts, "price": price} for ts, price in history],
     }
 
@@ -85,24 +144,44 @@ async def api_candles(
 @app.get("/api/derivatives")
 async def api_derivatives(asset: str = Query("BTCUSDT")):
     snapshot = db.get_latest_snapshot(asset)
-    return {"asset": asset, "snapshot": snapshot}
+    if not snapshot:
+        return {"asset": asset, "snapshot": None, "derivatives": None}
+
+    # Build derivatives-friendly format
+    derivatives = {
+        "mark_price": snapshot.get("price"),
+        "price": snapshot.get("price"),
+        "funding_rate": snapshot.get("funding_rate"),
+        "open_interest": snapshot.get("oi_value"),
+        "oi_change_1h": snapshot.get("oi_change_1h"),
+        "long_short_ratio": {
+            "long_pct": (snapshot.get("long_ratio") or 0) * 100,
+            "short_pct": (snapshot.get("short_ratio") or 0) * 100,
+        } if snapshot.get("long_ratio") is not None else None,
+        "timestamp": snapshot.get("timestamp"),
+    }
+    return {"asset": asset, "snapshot": snapshot, "derivatives": derivatives}
 
 
 @app.get("/api/funding-history")
 async def api_funding_history(asset: str = Query("BTCUSDT"), hours: int = Query(24)):
     history = db.get_funding_history(asset, hours=hours)
+    items = [{"timestamp": ts, "funding_rate": rate} for ts, rate in history]
     return {
-        "asset": asset, "hours": hours, "count": len(history),
-        "data": [{"timestamp": ts, "rate": rate} for ts, rate in history],
+        "asset": asset, "hours": hours, "count": len(items),
+        "history": items,
+        "data": items,
     }
 
 
 @app.get("/api/oi-history")
 async def api_oi_history(asset: str = Query("BTCUSDT"), hours: int = Query(24)):
     history = db.get_oi_history(asset, hours=hours)
+    items = [{"timestamp": ts, "open_interest": oi} for ts, oi in history]
     return {
-        "asset": asset, "hours": hours, "count": len(history),
-        "data": [{"timestamp": ts, "oi": oi} for ts, oi in history],
+        "asset": asset, "hours": hours, "count": len(items),
+        "history": items,
+        "data": items,
     }
 
 
@@ -184,4 +263,3 @@ if __name__ == "__main__":
     print(f"Starting Trading Intelligence API on port {port}")
     print(f"Dashboard: http://localhost:{port}/dashboard/index.html")
     uvicorn.run(app, host="127.0.0.1", port=port)
-

@@ -3,99 +3,181 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CrypT Trading Intelligence</title>
-<link rel="stylesheet" href="style.css">
+<title>CrypT — Trading Intelligence Dashboard</title>
+<meta name="description" content="Real-time crypto & forex trading intelligence with derivatives, signals, and market sentiment analysis.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=3">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 <body>
+<!-- Glow blobs background -->
+<div class="bg-blobs" aria-hidden="true">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
 <!-- ===== HEADER ===== -->
 <header id="header">
   <div class="header-left">
-    <span class="logo">CrypT</span>
-    <span class="badge live">LIVE</span>
-    <span class="badge fg" id="fg-badge">F&amp;G: --</span>
+    <div class="logo-wrap">
+      <span class="logo">CrypT</span>
+      <span class="logo-badge">Intelligence</span>
+    </div>
+    <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+  </div>
+  <div class="header-center">
+    <div class="fg-gauge-wrap" id="fg-gauge-wrap">
+      <svg class="fg-gauge" viewBox="0 0 120 70" width="120" height="70">
+        <path class="fg-track" d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8" stroke-linecap="round"/>
+        <path class="fg-fill" id="fg-arc" d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="url(#fg-gradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 157"/>
+        <defs>
+          <linearGradient id="fg-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#f85149"/>
+            <stop offset="50%" stop-color="#e3b341"/>
+            <stop offset="100%" stop-color="#2dd4a8"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="fg-value" id="fg-value">--</div>
+      <div class="fg-label" id="fg-label">Fear & Greed</div>
+    </div>
   </div>
   <div class="header-right">
-    <span id="status-bar">Loading...</span>
-    <span id="clock">--:--</span>
+    <div class="header-meta">
+      <span id="status-bar" class="status-text">Connecting...</span>
+      <span id="clock" class="clock-text">--:--:--</span>
+    </div>
   </div>
 </header>
 
-<!-- ===== MARKET OVERVIEW ===== -->
-<section id="market-section">
-  <div class="section-header">
-    <h2>CRYPTO</h2>
-    <span class="subtitle" id="crypto-count">0 assets</span>
-  </div>
-  <div id="crypto-grid" class="market-grid"></div>
+<!-- ===== MAIN ===== -->
+<main id="main-content">
 
-  <div class="section-header" style="margin-top:12px">
-    <h2>FOREX</h2>
-    <span class="subtitle" id="forex-count">0 pairs</span>
-  </div>
-  <div id="forex-grid" class="market-grid"></div>
-</section>
+  <!-- COIN ROW -->
+  <section class="coin-row-section">
+    <div class="coin-row" id="crypto-grid">
+      <div class="coin-card skeleton"></div>
+      <div class="coin-card skeleton"></div>
+      <div class="coin-card skeleton"></div>
+      <div class="coin-card skeleton"></div>
+      <div class="coin-card skeleton"></div>
+      <div class="coin-card skeleton"></div>
+    </div>
+  </section>
 
-<!-- ===== DETAIL PANEL (click coin to show) ===== -->
-<section id="detail-panel" class="hidden">
-  <div class="detail-header">
-    <div>
-      <span class="detail-symbol" id="detail-symbol">BTCUSDT</span>
-      <span class="detail-price" id="detail-price"></span>
-      <span class="detail-change" id="detail-change">0%</span>
+  <!-- FOREX ROW -->
+  <section class="forex-row-section" id="forex-section">
+    <div class="section-label">FOREX</div>
+    <div class="coin-row" id="forex-grid">
+      <div class="coin-card skeleton small"></div>
+      <div class="coin-card skeleton small"></div>
+      <div class="coin-card skeleton small"></div>
     </div>
-    <button id="detail-close" onclick="closeDetail()">&times;</button>
-  </div>
-  <div class="detail-body">
-    <div class="detail-chart-wrap">
-      <canvas id="detail-chart"></canvas>
-    </div>
-    <div class="detail-stats">
-      <div class="stat-group">
-        <h3>Derivatives</h3>
-        <div class="stat-row"><span>Funding Rate</span><span id="d-funding">--</span></div>
-        <div class="stat-row"><span>Open Interest</span><span id="d-oi">--</span></div>
-        <div class="stat-row"><span>OI Change 1h</span><span id="d-oi-chg">--</span></div>
-        <div class="stat-row"><span>Long / Short</span><span id="d-ls">--</span></div>
-      </div>
-      <div class="stat-group">
-        <h3>Cross-Exchange</h3>
-        <div class="stat-row"><span>Binance FR</span><span id="d-binance-fr">--</span></div>
-        <div class="stat-row"><span>Bybit FR</span><span id="d-bybit-fr">--</span></div>
-        <div class="stat-row"><span>Spread</span><span id="d-spread">--</span></div>
-      </div>
-      <div class="stat-group">
-        <h3>Charts</h3>
-        <div class="mini-chart-tabs">
-          <button class="tab-btn active" onclick="switchMiniChart('funding')">Funding</button>
-          <button class="tab-btn" onclick="switchMiniChart('oi')">OI</button>
+  </section>
+
+  <!-- BENTO DETAIL GRID (visible when asset selected) -->
+  <section id="bento-detail" class="bento-detail hidden">
+    <div class="bento-grid">
+      <!-- Large tile: Price Chart -->
+      <div class="glass-tile tile-chart" id="tile-chart">
+        <div class="tile-header">
+          <div class="tile-title-row">
+            <span class="tile-symbol" id="detail-symbol">BTC</span>
+            <span class="tile-price" id="detail-price">--</span>
+            <span class="tile-change" id="detail-change">--</span>
+          </div>
+          <button class="close-btn" id="detail-close" onclick="closeDetail()" aria-label="Close">&times;</button>
         </div>
-        <canvas id="mini-chart" height="120"></canvas>
+        <div class="chart-container">
+          <canvas id="detail-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Small tile: Funding Rate -->
+      <div class="glass-tile tile-sm" id="tile-funding">
+        <div class="tile-label">Funding Rate</div>
+        <div class="tile-value" id="d-funding">--</div>
+        <div class="tile-sub" id="d-funding-sub">8h cycle</div>
+      </div>
+
+      <!-- Small tile: Open Interest -->
+      <div class="glass-tile tile-sm" id="tile-oi">
+        <div class="tile-label">Open Interest</div>
+        <div class="tile-value" id="d-oi">--</div>
+        <div class="tile-sub" id="d-oi-sub">Total contracts</div>
+      </div>
+
+      <!-- Small tile: OI Change -->
+      <div class="glass-tile tile-sm" id="tile-oi-chg">
+        <div class="tile-label">OI Change 1h</div>
+        <div class="tile-value" id="d-oi-chg">--</div>
+      </div>
+
+      <!-- Small tile: Long/Short -->
+      <div class="glass-tile tile-sm" id="tile-ls">
+        <div class="tile-label">Long / Short</div>
+        <div class="ls-bar-wrap">
+          <div class="ls-bar">
+            <div class="ls-long" id="ls-long-bar" style="width: 50%"></div>
+          </div>
+          <div class="ls-labels">
+            <span class="ls-pct up" id="d-long-pct">--</span>
+            <span class="ls-pct down" id="d-short-pct">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Small tile: Cross-Exchange -->
+      <div class="glass-tile tile-cross" id="tile-cross">
+        <div class="tile-label">Cross-Exchange</div>
+        <div class="cross-rows">
+          <div class="cross-row"><span>Binance FR</span><span id="d-binance-fr" class="mono">--</span></div>
+          <div class="cross-row"><span>Bybit FR</span><span id="d-bybit-fr" class="mono">--</span></div>
+          <div class="cross-row"><span>Spread</span><span id="d-spread" class="mono">--</span></div>
+        </div>
+      </div>
+
+      <!-- Small tile: History mini chart -->
+      <div class="glass-tile tile-history" id="tile-history">
+        <div class="tile-label">History</div>
+        <div class="mini-tabs">
+          <button class="mini-tab active" onclick="switchMiniChart('funding')">Funding</button>
+          <button class="mini-tab" onclick="switchMiniChart('oi')">OI</button>
+        </div>
+        <div class="mini-chart-wrap">
+          <canvas id="mini-chart" height="100"></canvas>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ===== INFO TABS ===== -->
-<section id="info-section">
-  <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('news')">Tin tuc</button>
-    <button class="tab-btn" onclick="switchTab('whale')">Whale</button>
-    <button class="tab-btn" onclick="switchTab('calendar')">Calendar</button>
-    <button class="tab-btn" onclick="switchTab('signals')">ML Signals</button>
-    <button class="tab-btn" onclick="switchTab('dbstats')">DB Stats</button>
-  </div>
-  <div id="tab-news" class="tab-content active"><div class="empty-state">Loading...</div></div>
-  <div id="tab-whale" class="tab-content"><div class="empty-state">Loading...</div></div>
-  <div id="tab-calendar" class="tab-content"><div class="empty-state">Loading...</div></div>
-  <div id="tab-signals" class="tab-content"><div class="empty-state">Loading...</div></div>
-  <div id="tab-dbstats" class="tab-content"><div class="empty-state">Loading...</div></div>
-</section>
+  <!-- BOTTOM TABS -->
+  <section id="info-section" class="glass-tile tile-tabs">
+    <div class="tab-bar" id="tab-bar">
+      <button class="tab-btn active" data-tab="news" onclick="switchTab('news',this)">📰 Tin tức</button>
+      <button class="tab-btn" data-tab="whale" onclick="switchTab('whale',this)">🐳 Whale</button>
+      <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar',this)">📅 Calendar</button>
+      <button class="tab-btn" data-tab="signals" onclick="switchTab('signals',this)">🤖 ML Signals</button>
+      <button class="tab-btn" data-tab="dbstats" onclick="switchTab('dbstats',this)">💾 DB Stats</button>
+      <div class="tab-indicator" id="tab-indicator"></div>
+    </div>
+    <div class="tab-panels">
+      <div id="tab-news" class="tab-panel active"><div class="skeleton-block"></div><div class="skeleton-block"></div><div class="skeleton-block short"></div></div>
+      <div id="tab-whale" class="tab-panel"><div class="skeleton-block"></div></div>
+      <div id="tab-calendar" class="tab-panel"><div class="skeleton-block"></div></div>
+      <div id="tab-signals" class="tab-panel"><div class="skeleton-block"></div></div>
+      <div id="tab-dbstats" class="tab-panel"><div class="skeleton-block"></div></div>
+    </div>
+  </section>
+</main>
 
 <footer>
-  <span>Trading Intelligence System &mdash; Data for reference only</span>
+  <span>Trading Intelligence System — Data for reference only, not financial advice</span>
 </footer>
 
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
