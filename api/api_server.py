@@ -28,6 +28,12 @@ load_dotenv()
 
 db = CryptDB()
 
+# DB migration: add summary column to news_items if not exists
+try:
+    db._execute("ALTER TABLE news_items ADD COLUMN IF NOT EXISTS summary TEXT")
+except Exception:
+    pass  # Column already exists or DB doesn't support IF NOT EXISTS
+
 app = FastAPI(
     title="Trading Intelligence API",
     description="API for CrypT Trading Intelligence Dashboard",

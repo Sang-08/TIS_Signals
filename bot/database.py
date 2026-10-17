@@ -145,7 +145,8 @@ class CryptDB:
                         headline TEXT,
                         source VARCHAR(100),
                         url TEXT UNIQUE,
-                        sentiment_score DOUBLE PRECISION
+                        sentiment_score DOUBLE PRECISION,
+                        summary TEXT
                     );
 
                     CREATE INDEX IF NOT EXISTS idx_news_ts
@@ -374,14 +375,16 @@ class CryptDB:
 
     # ─────────────── News ───────────────
 
-    def record_news(self, headline: str, source: str, url: str, timestamp: int):
+    def record_news(self, headline: str, source: str, url: str, timestamp: int,
+                    summary: str | None = None):
         """Ghi tin tức. Bỏ qua nếu URL trùng."""
         try:
             self._execute(
-                """INSERT INTO news_items (timestamp, headline, source, url)
-                   VALUES (%s, %s, %s, %s)
-                   ON CONFLICT (url) DO NOTHING""",
-                (timestamp, headline, source, url),
+                """INSERT INTO news_items (timestamp, headline, source, url, summary)
+                   VALUES (%s, %s, %s, %s, %s)
+                   ON CONFLICT (url) DO UPDATE SET summary = EXCLUDED.summary
+                   WHERE news_items.summary IS NULL AND EXCLUDED.summary IS NOT NULL""",
+                (timestamp, headline, source, url, summary),
             )
         except psycopg2.Error:
             pass

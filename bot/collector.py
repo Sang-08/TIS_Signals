@@ -132,11 +132,18 @@ def collect_news(db: CryptDB, finnhub: FinnhubClient) -> list[dict]:
     try:
         items = finnhub.get_forex_news(limit=15)
         for item in items:
+            # Finnhub returns 'summary' field — strip HTML, cap 3000 chars
+            raw_summary = item.get("summary", "") or ""
+            import re
+            clean_summary = re.sub(r'<[^>]+>', '', raw_summary).strip()
+            if len(clean_summary) > 3000:
+                clean_summary = clean_summary[:3000]
             db.record_news(
                 headline=item.get("headline", ""),
                 source=item.get("source", ""),
                 url=item.get("url", ""),
                 timestamp=item.get("datetime", int(time.time())),
+                summary=clean_summary if clean_summary else None,
             )
         logger.info(f"Collected {len(items)} news items")
     except Exception as e:
